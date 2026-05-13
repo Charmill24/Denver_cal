@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:visitdenver.com)",
+      "Bash(npm --version)",
+      "Bash(npx create-expo-app@latest . --template tabs)",
+      "PowerShell(Set-Location \"c:\\\\Users\\\\charl\\\\Denver_cal\"; Get-ChildItem -Recurse -File | Where-Object { $_.FullName -notmatch 'node_modules|\\\\.git' } | Select-Object -ExpandProperty FullName | Sort-Object)",
+      "Read(//c/Users/charl/.claude/projects/**)",
+      "Read(//c/Users/charl/Running-app/**)"
+    ]
+  }
+}

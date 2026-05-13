@@ -1,3 +1,5 @@
+import { parse } from 'node-html-parser'
+
 export default async function handler(req, res) {
   const { date } = req.query
 
@@ -5,49 +7,55 @@ export default async function handler(req, res) {
     return res.status(400).json({ events: [], error: 'Invalid date' })
   }
 
-  const apiKey = process.env.TICKETMASTER_KEY
-  if (!apiKey) {
-    return res.status(200).json({ events: [], needsKey: true })
-  }
-
   try {
-    const params = new URLSearchParams({
-      apikey: apiKey,
-      city: 'Denver',
-      stateCode: 'CO',
-      countryCode: 'US',
-      startDateTime: `${date}T00:00:00Z`,
-      endDateTime: `${date}T23:59:59Z`,
-      size: '50',
-      sort: 'date,asc',
-    })
-
-    const r = await fetch(`https://app.ticketmaster.com/discovery/v2/events.json?${params}`)
-    if (!r.ok) throw new Error(`Ticketmaster ${r.status}`)
-
-    const data = await r.json()
-
-    const events = (data._embedded?.events ?? []).map(e => {
-      const venue = e._embedded?.venues?.[0]
-      const cls = e.classifications?.[0]
-      const price = e.priceRanges?.[0]
-      const imgs = e.images ?? []
-      const img = imgs.filter(i => i.ratio === '16_9').sort((a, b) => b.width - a.width)[0] ?? imgs[0]
-
-      return {
-        id: e.id,
-        name: e.name,
-        date: e.dates?.start?.localDate,
-        time: e.dates?.start?.localTime,
-        venue: venue?.name ?? 'Denver',
-        address: venue?.address?.line1,
-        imageUrl: img?.url ?? null,
-        category: cls?.segment?.name,
-        genre: cls?.genre?.name,
-        priceMin: price?.min ?? null,
-        url: e.url,
+    const r = await fetch(`https://www.westword.com/eventsearch/?narrowByDate=${date}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       }
     })
+
+    if (!r.ok) throw new Error(`Westword ${r.status}`)
+
+    const html = await r.text()
+    const root = parse(html)
+    const items = root.querySelectorAll('.events-calendar__list-item')
+
+    const [year, month, day] = date.split('-').map(Number)
+    const dateObj = new Date(year, month - 1, day)
+    const monthDay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+    const events = items.map((item, i) => {
+      const titleEl = item.querySelector('.event-title a')
+      const name = titleEl?.text?.trim() ?? ''
+      const url = titleEl?.getAttribute('href') ?? ''
+
+      const imgSrc = item.querySelector('.event-image img')?.getAttribute('src') ?? null
+      const isPlaceholder = !imgSrc || imgSrc.includes('binary-viewer') || imgSrc.includes('placeholder')
+
+      const occurrences = item.querySelector('.event-occurrences')?.text?.trim() ?? ''
+      const venueName = item.querySelector('.event-location-name')?.text?.trim() ?? ''
+      const venueAddr = item.querySelector('.event-location-address')?.text?.replace(/^,\s*/, '').trim() ?? ''
+      const neighborhood = item.querySelector('.event-neighbourhood strong')?.text?.trim() ?? ''
+
+      let time = null
+      const parts = occurrences.split('|')
+      const matchPart = parts.find(p => p.includes(monthDay)) ?? parts[0]
+      const m = matchPart.match(/(\d+:\d+\s*[ap]m)/i)
+      if (m) time = m[1].trim().replace(/\s*(am|pm)/i, s => ' ' + s.trim().toUpperCase())
+
+      return {
+        id: url.match(/\/event\/([^/]+)\//)?.[1] ?? String(i),
+        name,
+        date,
+        time,
+        venue: venueName,
+        address: venueAddr,
+        neighborhood,
+        imageUrl: isPlaceholder ? null : imgSrc,
+        url,
+      }
+    }).filter(e => e.name)
 
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400')
     return res.json({ events })

@@ -54,12 +54,12 @@ export default function EventDetail({ event, onBack }) {
           </h1>
 
           <div className="bg-[--card] border border-[--border] rounded-2xl px-4 mb-4 divide-y divide-[--border]">
-            {event.date && (
+            {event.time && (
               <div className="flex items-center py-3.5 gap-3.5">
-                <span className="text-lg">📅</span>
+                <span className="text-lg">🕐</span>
                 <div>
-                  <p className="text-[--muted] text-[11px] font-semibold uppercase tracking-wide mb-0.5">Date</p>
-                  <p className="text-[--text] text-sm font-medium">{event.date}</p>
+                  <p className="text-[--muted] text-[11px] font-semibold uppercase tracking-wide mb-0.5">Time</p>
+                  <p className="text-[--text] text-sm font-medium">{event.time}</p>
                 </div>
               </div>
             )}
@@ -68,7 +68,16 @@ export default function EventDetail({ event, onBack }) {
                 <span className="text-lg">📍</span>
                 <div>
                   <p className="text-[--muted] text-[11px] font-semibold uppercase tracking-wide mb-0.5">Venue</p>
-                  <p className="text-[--text] text-sm font-medium">{event.venue}</p>
+                  <p className="text-[--text] text-sm font-medium">{event.venue}{event.address ? ` · ${event.address}` : ''}</p>
+                </div>
+              </div>
+            )}
+            {event.neighborhood && (
+              <div className="flex items-center py-3.5 gap-3.5">
+                <span className="text-lg">🗺️</span>
+                <div>
+                  <p className="text-[--muted] text-[11px] font-semibold uppercase tracking-wide mb-0.5">Neighborhood</p>
+                  <p className="text-[--text] text-sm font-medium">{event.neighborhood}</p>
                 </div>
               </div>
             )}
@@ -94,7 +103,7 @@ export default function EventDetail({ event, onBack }) {
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-2 w-full bg-[--primary] text-white font-bold text-base py-4 rounded-2xl"
         >
-          View on visitdenver.com ↗
+          View on Westword ↗
         </a>
       </div>
     </div>

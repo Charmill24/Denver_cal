@@ -48,22 +48,7 @@ function EventsScreen({ onEventClick }) {
         {loading && (
           <p className="text-[--muted] text-sm text-center py-16">Finding events…</p>
         )}
-        {!loading && error === 'NEEDS_KEY' && (
-          <div className="m-2 p-5 bg-[--card] border border-[--border] rounded-2xl text-center">
-            <p className="text-3xl mb-3">🔑</p>
-            <p className="text-[--text] font-bold mb-2">One quick setup step</p>
-            <p className="text-[--muted] text-sm leading-relaxed mb-4">
-              Add a free Ticketmaster API key in your Vercel dashboard to see live Denver events.
-            </p>
-            <p className="text-[--muted] text-xs leading-relaxed">
-              1. Get a free key at <span className="text-[--primary]">developer.ticketmaster.com</span>{'\n'}
-              2. In Vercel → Settings → Environment Variables{'\n'}
-              3. Add <span className="text-[--accent] font-mono">TICKETMASTER_KEY</span> = your key{'\n'}
-              4. Redeploy
-            </p>
-          </div>
-        )}
-        {!loading && error === 'NETWORK' && (
+        {!loading && error && (
           <p className="text-[--muted] text-sm text-center py-16">📡 Couldn't load events</p>
         )}
         {!loading && !error && events.length === 0 && (

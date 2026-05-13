@@ -5,42 +5,47 @@ export default async function handler(req, res) {
     return res.status(400).json({ events: [], error: 'Invalid date' })
   }
 
+  const apiKey = process.env.TICKETMASTER_KEY
+  if (!apiKey) {
+    return res.status(200).json({ events: [], needsKey: true })
+  }
+
   try {
     const params = new URLSearchParams({
-      'venue.city': 'Denver',
-      'venue.state': 'CO',
-      'datetime_local.gte': `${date}T00:00:00`,
-      'datetime_local.lte': `${date}T23:59:59`,
-      sort: 'datetime_local.asc',
-      per_page: '50',
+      apikey: apiKey,
+      city: 'Denver',
+      stateCode: 'CO',
+      countryCode: 'US',
+      startDateTime: `${date}T00:00:00Z`,
+      endDateTime: `${date}T23:59:59Z`,
+      size: '50',
+      sort: 'date,asc',
     })
 
-    const r = await fetch(`https://api.seatgeek.com/2/events?${params}`)
-
-    if (!r.ok) {
-      return res.status(502).json({ events: [], error: `SeatGeek ${r.status}` })
-    }
+    const r = await fetch(`https://app.ticketmaster.com/discovery/v2/events.json?${params}`)
+    if (!r.ok) throw new Error(`Ticketmaster ${r.status}`)
 
     const data = await r.json()
 
-    const events = (data.events ?? []).map(e => {
-      const performer = e.performers?.[0]
-      const image = performer?.image ?? e.performers?.find(p => p.image)?.image ?? null
+    const events = (data._embedded?.events ?? []).map(e => {
+      const venue = e._embedded?.venues?.[0]
+      const cls = e.classifications?.[0]
+      const price = e.priceRanges?.[0]
+      const imgs = e.images ?? []
+      const img = imgs.filter(i => i.ratio === '16_9').sort((a, b) => b.width - a.width)[0] ?? imgs[0]
 
       return {
-        id: String(e.id),
-        name: e.title,
-        date: e.datetime_local
-          ? new Date(e.datetime_local).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-          : date,
-        time: e.datetime_tbd ? null : e.datetime_local?.split('T')[1]?.slice(0, 5),
-        venue: e.venue?.name ?? 'Denver',
-        address: e.venue?.address,
-        imageUrl: image,
-        category: e.type ? e.type.charAt(0).toUpperCase() + e.type.slice(1) : null,
-        priceMin: e.stats?.lowest_price ?? null,
+        id: e.id,
+        name: e.name,
+        date: e.dates?.start?.localDate,
+        time: e.dates?.start?.localTime,
+        venue: venue?.name ?? 'Denver',
+        address: venue?.address?.line1,
+        imageUrl: img?.url ?? null,
+        category: cls?.segment?.name,
+        genre: cls?.genre?.name,
+        priceMin: price?.min ?? null,
         url: e.url,
-        description: null,
       }
     })
 

@@ -6,7 +6,7 @@ const cache = new Map()
 export function useEvents(date) {
   const [events, setEvents] = useState(cache.get(date) ?? [])
   const [loading, setLoading] = useState(!cache.has(date))
-  const [error, setError] = useState(null)
+  const [error, setError] = useState(null) // null | 'NEEDS_KEY' | 'NETWORK'
 
   const load = useCallback(async (force = false) => {
     if (!force && cache.has(date)) {
@@ -21,7 +21,7 @@ export function useEvents(date) {
       cache.set(date, data)
       setEvents(data)
     } catch (e) {
-      setError('NETWORK')
+      setError(e?.code === 'NEEDS_KEY' ? 'NEEDS_KEY' : 'NETWORK')
     } finally {
       setLoading(false)
     }

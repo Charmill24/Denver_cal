@@ -15,7 +15,8 @@
       "Bash(curl -sf \"https://denver-cal.vercel.app/api/debug?date=2026-05-15\")",
       "Read(//tmp/**)",
       "WebFetch(domain:api.seatgeek.com)",
-      "Bash(\"C:/Program Files/Git/bin/git.exe\" commit -m \"switch to seatgeek api, restore event card fields\")"
+      "Bash(\"C:/Program Files/Git/bin/git.exe\" commit -m \"switch to seatgeek api, restore event card fields\")",
+      "Bash(\"C:/Program Files/Git/bin/git.exe\" commit -m \"api probe debug\")"
     ]
   }
 }

@@ -1,50 +1,22 @@
-import { parse } from 'node-html-parser'
-
 export default async function handler(req, res) {
-  const date = req.query.date || '2026-05-15'
+  const tests = [
+    // SeatGeek - no auth
+    'https://api.seatgeek.com/2/events?venue.city=Denver&datetime_local.gte=2026-05-29T00:00:00&datetime_local.lte=2026-05-29T23:59:59&per_page=3',
+    // Ticketmaster open
+    'https://app.ticketmaster.com/discovery/v2/events.json?city=Denver&stateCode=CO&startDateTime=2026-05-29T00:00:00Z&endDateTime=2026-05-29T23:59:59Z&apikey=test',
+    // Predicthq public
+    'https://api.predicthq.com/v1/events/?location_around.origin=39.7392,-104.9903&location_around.offset=10mi&start.gte=2026-05-29&start.lte=2026-05-29',
+  ]
 
-  const url = `https://visitdenver.com/events/?startDate=${date}&endDate=${date}`
-
-  const r = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    },
-    redirect: 'follow',
-  })
-
-  const html = await r.text()
-  const root = parse(html)
-
-  // 1. JSON-LD structured data
-  const jsonLds = root.querySelectorAll('script[type="application/ld+json"]')
-    .map(s => { try { return JSON.parse(s.text) } catch { return null } })
-    .filter(Boolean)
-
-  // 2. Unique class names containing event/listing/cal
-  const classNames = [...new Set(
-    [...html.matchAll(/class="([^"]+)"/g)]
-      .flatMap(m => m[1].split(' '))
-      .filter(c => /event|listing|cal-|card/i.test(c))
-  )].slice(0, 50)
-
-  // 3. Snippet around the word "event" near an <a href
-  const idx = html.indexOf('/event/')
-  const snippet = idx > 0 ? html.slice(Math.max(0, idx - 300), idx + 600) : 'no /event/ href found'
-
-  // 4. All hrefs containing /event/
-  const eventHrefs = [...new Set(
-    [...html.matchAll(/href="(\/event\/[^"]+)"/g)].map(m => m[1])
-  )].slice(0, 10)
-
-  res.json({
-    status: r.status,
-    finalUrl: r.url,
-    htmlLength: html.length,
-    jsonLdCount: jsonLds.length,
-    jsonLdTypes: jsonLds.map(j => j['@type'] || j.type || '?'),
-    jsonLdSample: jsonLds[0] || null,
-    eventClassNames: classNames,
-    eventHrefs,
-    snippetAroundFirstEventHref: snippet,
-  })
+  const results = []
+  for (const url of tests) {
+    try {
+      const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' } })
+      const text = await r.text()
+      results.push({ url: url.split('?')[0], status: r.status, body: text.slice(0, 300) })
+    } catch (e) {
+      results.push({ url: url.split('?')[0], error: e.message })
+    }
+  }
+  res.json(results)
 }

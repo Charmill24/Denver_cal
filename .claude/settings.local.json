@@ -9,7 +9,9 @@
       "Read(//c/Users/charl/Running-app/**)",
       "Bash(\"C:/Program Files/Git/bin/git.exe\" add -A)",
       "Bash(\"C:/Program Files/Git/bin/git.exe\" commit -m \"improve debug\")",
-      "Bash(\"C:/Program Files/Git/bin/git.exe\" push)"
+      "Bash(\"C:/Program Files/Git/bin/git.exe\" push)",
+      "WebFetch(domain:denver-cal.vercel.app)",
+      "Bash(\"C:/Program Files/Git/bin/git.exe\" commit -m \"smarter debug\")"
     ]
   }
 }

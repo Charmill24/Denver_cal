@@ -1,5 +1,3 @@
-import { parse } from 'node-html-parser'
-
 export default async function handler(req, res) {
   const { date } = req.query
 
@@ -8,75 +6,48 @@ export default async function handler(req, res) {
   }
 
   try {
-    const r = await fetch(
-      `https://visitdenver.com/denver365_com/api/events?date=${date}`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-          Accept: 'text/html',
-        },
-      }
-    )
-
-    if (!r.ok) {
-      return res.status(502).json({ events: [], error: `Upstream ${r.status}` })
-    }
-
-    const html = await r.text()
-    const root = parse(html)
-
-    // Format requested date to match the page's display format: "May 15"
-    const [y, m, d] = date.split('-').map(Number)
-    const targetLabel = new Date(y, m - 1, d).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
+    const params = new URLSearchParams({
+      'venue.city': 'Denver',
+      'venue.state': 'CO',
+      'datetime_local.gte': `${date}T00:00:00`,
+      'datetime_local.lte': `${date}T23:59:59`,
+      sort: 'datetime_local.asc',
+      per_page: '50',
     })
 
-    const events = []
+    const r = await fetch(`https://api.seatgeek.com/2/events?${params}`)
 
-    for (const item of root.querySelectorAll('.event-item')) {
-      const titleEl = item.querySelector('h3 a')
-      const dateEl  = item.querySelector('span.date')
-      const venueEl = item.querySelector('p.venue a, p.venue')
-      const descEl  = item.querySelector('p.description')
-      const imgEl   = item.querySelector('img')
-      const linkEl  = item.querySelector('a[href]')
-
-      const name = titleEl?.text?.trim()
-      if (!name) continue
-
-      const eventDateLabel = dateEl?.text?.trim() ?? ''
-
-      // Skip events that are explicitly dated but not for our requested day
-      if (eventDateLabel && eventDateLabel !== targetLabel) continue
-
-      // Fix blurry thumbnail → proper image
-      let imageUrl = imgEl?.getAttribute('src') ?? null
-      if (imageUrl) {
-        imageUrl = imageUrl.replace(
-          /\/image\/upload\/[^/]+\//,
-          '/image/upload/c_fill,f_jpg,h_500,q_85,w_800/'
-        )
-      }
-
-      const href = linkEl?.getAttribute('href') ?? ''
-      const slug = href.split('/').filter(Boolean).pop() ?? ''
-
-      events.push({
-        id: slug || name.toLowerCase().replace(/\s+/g, '-'),
-        name,
-        date: eventDateLabel,
-        venue: venueEl?.text?.trim() ?? '',
-        description: descEl?.text?.trim() ?? '',
-        imageUrl,
-        url: href ? `https://visitdenver.com${href}` : 'https://visitdenver.com/events/',
-      })
+    if (!r.ok) {
+      return res.status(502).json({ events: [], error: `SeatGeek ${r.status}` })
     }
+
+    const data = await r.json()
+
+    const events = (data.events ?? []).map(e => {
+      const performer = e.performers?.[0]
+      const image = performer?.image ?? e.performers?.find(p => p.image)?.image ?? null
+
+      return {
+        id: String(e.id),
+        name: e.title,
+        date: e.datetime_local
+          ? new Date(e.datetime_local).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : date,
+        time: e.datetime_tbd ? null : e.datetime_local?.split('T')[1]?.slice(0, 5),
+        venue: e.venue?.name ?? 'Denver',
+        address: e.venue?.address,
+        imageUrl: image,
+        category: e.type ? e.type.charAt(0).toUpperCase() + e.type.slice(1) : null,
+        priceMin: e.stats?.lowest_price ?? null,
+        url: e.url,
+        description: null,
+      }
+    })
 
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400')
     return res.json({ events })
   } catch (err) {
     console.error('[api/events]', err)
-    return res.status(500).json({ events: [], error: 'Failed to fetch events' })
+    return res.status(500).json({ events: [], error: err.message })
   }
 }

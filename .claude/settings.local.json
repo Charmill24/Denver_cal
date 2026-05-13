@@ -11,7 +11,11 @@
       "Bash(\"C:/Program Files/Git/bin/git.exe\" commit -m \"improve debug\")",
       "Bash(\"C:/Program Files/Git/bin/git.exe\" push)",
       "WebFetch(domain:denver-cal.vercel.app)",
-      "Bash(\"C:/Program Files/Git/bin/git.exe\" commit -m \"smarter debug\")"
+      "Bash(\"C:/Program Files/Git/bin/git.exe\" commit -m \"smarter debug\")",
+      "Bash(curl -sf \"https://denver-cal.vercel.app/api/debug?date=2026-05-15\")",
+      "Read(//tmp/**)",
+      "WebFetch(domain:api.seatgeek.com)",
+      "Bash(\"C:/Program Files/Git/bin/git.exe\" commit -m \"switch to seatgeek api, restore event card fields\")"
     ]
   }
 }

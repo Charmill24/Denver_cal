@@ -6,7 +6,10 @@
       "Bash(npx create-expo-app@latest . --template tabs)",
       "PowerShell(Set-Location \"c:\\\\Users\\\\charl\\\\Denver_cal\"; Get-ChildItem -Recurse -File | Where-Object { $_.FullName -notmatch 'node_modules|\\\\.git' } | Select-Object -ExpandProperty FullName | Sort-Object)",
       "Read(//c/Users/charl/.claude/projects/**)",
-      "Read(//c/Users/charl/Running-app/**)"
+      "Read(//c/Users/charl/Running-app/**)",
+      "Bash(\"C:/Program Files/Git/bin/git.exe\" add -A)",
+      "Bash(\"C:/Program Files/Git/bin/git.exe\" commit -m \"improve debug\")",
+      "Bash(\"C:/Program Files/Git/bin/git.exe\" push)"
     ]
   }
 }
